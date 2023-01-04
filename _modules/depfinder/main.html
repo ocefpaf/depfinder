@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>depfinder.main &mdash; depfinder 2.1.2.dev176+ge46d069 documentation</title>
+      <link rel="stylesheet" href="../../_static/pygments.css" type="text/css" />
+      <link rel="stylesheet" href="../../_static/css/theme.css" type="text/css" />
+  <!--[if lt IE 9]>
+    <script src="../../_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+        <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+        <script src="../../_static/jquery.js"></script>
+        <script src="../../_static/underscore.js"></script>
+        <script src="../../_static/_sphinx_javascript_frameworks_compat.js"></script>
+        <script src="../../_static/doctools.js"></script>
+        <script src="../../_static/sphinx_highlight.js"></script>
+    <script src="../../_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+            <a href="../../index.html" class="icon icon-home"> depfinder
+          </a>
+              <div class="version">
+                2.1.2.dev176+ge46d069
+              </div>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="../../search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <!-- Local TOC -->
+              <div class="local-toc"></div>
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="../../index.html">depfinder</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="../../index.html" class="icon icon-home"></a></li>
+          <li class="breadcrumb-item"><a href="../index.html">Module code</a></li>
+      <li class="breadcrumb-item active">depfinder.main</li>
+      <li class="wy-breadcrumbs-aside">
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+
+           <div itemprop="articleBody">
+             
+  <h1>Source code for depfinder.main</h1><div class="highlight"><pre>
+<span></span><span class="c1"># Copyright (c) &lt;2015-2016&gt;, Eric Dill</span>
+<span class="c1">#</span>
+<span class="c1"># All rights reserved.  Redistribution and use in source and binary forms, with</span>
+<span class="c1"># or without modification, are permitted provided that the following conditions</span>
+<span class="c1"># are met:</span>
+<span class="c1">#</span>
+<span class="c1"># 1. Redistributions of source code must retain the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer.</span>
+<span class="c1">#</span>
+<span class="c1"># 2. Redistributions in binary form must reproduce the above copyright notice,</span>
+<span class="c1"># this list of conditions and the following disclaimer in the documentation</span>
+<span class="c1"># and/or other materials provided with the distribution.</span>
+<span class="c1">#</span>
+<span class="c1"># 3. Neither the name of the copyright holder nor the names of its contributors</span>
+<span class="c1"># may be used to endorse or promote products derived from this software without</span>
+<span class="c1"># specific prior written permission.</span>
+<span class="c1">#</span>
+<span class="c1"># THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;</span>
+<span class="c1"># AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE</span>
+<span class="c1"># IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE</span>
+<span class="c1"># ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE</span>
+<span class="c1"># LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR</span>
+<span class="c1"># CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF</span>
+<span class="c1"># SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS</span>
+<span class="c1"># INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN</span>
+<span class="c1"># CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)</span>
+<span class="c1"># ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE</span>
+<span class="c1"># POSSIBILITY OF SUCH DAMAGE.</span>
+
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">print_function</span><span class="p">,</span> <span class="n">division</span><span class="p">,</span> <span class="n">absolute_import</span>
+
+<span class="kn">import</span> <span class="nn">copy</span>
+<span class="kn">import</span> <span class="nn">io</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">defaultdict</span>
+<span class="kn">from</span> <span class="nn">fnmatch</span> <span class="kn">import</span> <span class="n">fnmatch</span>
+
+<span class="kn">from</span> <span class="nn">.inspection</span> <span class="kn">import</span> <span class="n">iterate_over_library</span><span class="p">,</span> <span class="n">get_imported_libs</span>
+<span class="kn">from</span> <span class="nn">.utils</span> <span class="kn">import</span> <span class="n">pkg_data</span>
+
+<span class="n">logger</span> <span class="o">=</span> <span class="n">logging</span><span class="o">.</span><span class="n">getLogger</span><span class="p">(</span><span class="s1">&#39;depfinder&#39;</span><span class="p">)</span>
+
+<span class="n">STRICT_CHECKING</span> <span class="o">=</span> <span class="kc">False</span>
+
+
+<div class="viewcode-block" id="simple_import_search"><a class="viewcode-back" href="../../index.html#depfinder.main.simple_import_search">[docs]</a><span class="k">def</span> <span class="nf">simple_import_search</span><span class="p">(</span><span class="n">path_to_source_code</span><span class="p">,</span> <span class="n">remap</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">ignore</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">custom_namespaces</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return all imported modules in all .py files in `path_to_source_code`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path_to_source_code : str</span>
+<span class="sd">    remap : bool, optional</span>
+<span class="sd">        Normalize the import names to be synonymous with their conda/pip names</span>
+<span class="sd">    ignore : list, optional</span>
+<span class="sd">        String pattern which if matched causes the file to not be inspected</span>
+<span class="sd">    custom_namespaces : list of str or None</span>
+<span class="sd">        If not None, then resulting package outputs will list everying under these</span>
+<span class="sd">        namespaces (e.g., for packages foo.bar and foo.baz, the outputs are foo.bar</span>
+<span class="sd">        and foo.baz instead of foo if custom_namespaces=[&quot;foo&quot;]).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        The list of all imported modules, sorted according to the keys listed</span>
+<span class="sd">        in the docstring of depfinder.ImportCatcher.describe()</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; depfinder.simple_import_search(&#39;/path/to/depfinder/source&#39;)</span>
+<span class="sd">    {&#39;builtin&#39;: [&#39;__future__&#39;,</span>
+<span class="sd">                 &#39;ast&#39;,</span>
+<span class="sd">                 &#39;collections&#39;,</span>
+<span class="sd">                 &#39;json&#39;,</span>
+<span class="sd">                 &#39;os&#39;,</span>
+<span class="sd">                 &#39;shlex&#39;,</span>
+<span class="sd">                 &#39;sys&#39;,</span>
+<span class="sd">                 &#39;tempfile&#39;],</span>
+<span class="sd">     &#39;required&#39;: [&#39;depfinder&#39;,</span>
+<span class="sd">                  &#39;nbformat&#39;,</span>
+<span class="sd">                  &#39;pytest&#39;,</span>
+<span class="sd">                  &#39;setuptools&#39;,</span>
+<span class="sd">                  &#39;sphinx_rtd_theme&#39;,</span>
+<span class="sd">                  &#39;stdlib_list&#39;,</span>
+<span class="sd">                  &#39;test_with_code&#39;]}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">all_deps</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+    <span class="n">catchers</span> <span class="o">=</span> <span class="n">iterate_over_library</span><span class="p">(</span><span class="n">path_to_source_code</span><span class="p">,</span> <span class="n">custom_namespaces</span><span class="o">=</span><span class="n">custom_namespaces</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">mod</span><span class="p">,</span> <span class="n">path</span><span class="p">,</span> <span class="n">catcher</span> <span class="ow">in</span> <span class="n">catchers</span><span class="p">:</span>
+        <span class="c1"># if ignore provided skip things which match the ignore pattern</span>
+        <span class="k">if</span> <span class="n">ignore</span> <span class="ow">and</span> <span class="nb">any</span><span class="p">(</span><span class="n">fnmatch</span><span class="p">(</span><span class="n">path</span><span class="p">,</span> <span class="n">i</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="n">ignore</span><span class="p">):</span>
+            <span class="k">continue</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">catcher</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">all_deps</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+    <span class="n">all_deps</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">all_deps</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">}</span>
+    <span class="k">if</span> <span class="n">remap</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">sanitize_deps</span><span class="p">(</span><span class="n">all_deps</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">all_deps</span></div>
+
+
+<div class="viewcode-block" id="notebook_path_to_dependencies"><a class="viewcode-back" href="../../index.html#depfinder.main.notebook_path_to_dependencies">[docs]</a><span class="k">def</span> <span class="nf">notebook_path_to_dependencies</span><span class="p">(</span><span class="n">path_to_notebook</span><span class="p">,</span> <span class="n">remap</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span> <span class="n">custom_namespaces</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Helper function that turns a jupyter notebook into a list of dependencies</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path_to_notebook : str</span>
+<span class="sd">    remap : bool, optional</span>
+<span class="sd">        Normalize the import names to be synonymous with their conda/pip names</span>
+<span class="sd">    custom_namespaces : list of str ot None, optional</span>
+<span class="sd">        If not None, then resulting package outputs will list everying under these</span>
+<span class="sd">        namespaces (e.g., for packages foo.bar and foo.baz, the outputs are foo.bar</span>
+<span class="sd">        and foo.baz instead of foo if custom_namespaces=[&quot;foo&quot;]).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        Dict of dependencies keyed on</span>
+
+<span class="sd">        - &#39;builtin&#39; - libraries built in to python</span>
+<span class="sd">        - &#39;required&#39; - libraries that are found at the top level of your modules</span>
+<span class="sd">        - &#39;questionable&#39; - libraries that are found inside try/except blocks</span>
+<span class="sd">        - &#39;relative&#39; - libraries that are relative imports</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; depfinder.notebook_path_to_dependencies(&#39;depfinder_usage.ipynb&#39;)</span>
+<span class="sd">    {&#39;builtin&#39;: [&#39;os&#39;, &#39;pprint&#39;], &#39;required&#39;: [&#39;depfinder&#39;]}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="kn">from</span> <span class="nn">IPython.core.inputsplitter</span> <span class="kn">import</span> <span class="n">IPythonInputSplitter</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="n">IPythonInputSplitter</span><span class="p">(</span><span class="n">line_input_checker</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span><span class="o">.</span><span class="n">transform_cell</span>
+    <span class="k">except</span><span class="p">:</span>
+        <span class="n">transform</span> <span class="o">=</span> <span class="k">lambda</span> <span class="n">code</span><span class="p">:</span> <span class="n">code</span>
+
+    <span class="n">nb</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">load</span><span class="p">(</span><span class="n">io</span><span class="o">.</span><span class="n">open</span><span class="p">(</span><span class="n">path_to_notebook</span><span class="p">,</span> <span class="n">encoding</span><span class="o">=</span><span class="s1">&#39;utf8&#39;</span><span class="p">))</span>
+    <span class="n">codeblocks</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;&#39;</span><span class="o">.</span><span class="n">join</span><span class="p">(</span><span class="n">cell</span><span class="p">[</span><span class="s1">&#39;source&#39;</span><span class="p">])</span> <span class="k">for</span> <span class="n">cell</span> <span class="ow">in</span> <span class="n">nb</span><span class="p">[</span><span class="s1">&#39;cells&#39;</span><span class="p">]</span>
+                  <span class="k">if</span> <span class="n">cell</span><span class="p">[</span><span class="s1">&#39;cell_type&#39;</span><span class="p">]</span> <span class="o">==</span> <span class="s1">&#39;code&#39;</span><span class="p">]</span>
+    <span class="n">all_deps</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">set</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">codeblock</span> <span class="ow">in</span> <span class="n">codeblocks</span><span class="p">:</span>
+        <span class="n">codeblock</span> <span class="o">=</span> <span class="n">transform</span><span class="p">(</span><span class="n">codeblock</span><span class="p">)</span>
+        <span class="c1"># TODO this may fail on py2/py3 syntax when running in the other runtime.</span>
+        <span class="c1"># May want to consider updating some error handling around that case.</span>
+        <span class="c1"># Will wait until that use case surfaces before modifying</span>
+        <span class="n">deps_dict</span> <span class="o">=</span> <span class="n">get_imported_libs</span><span class="p">(</span><span class="n">codeblock</span><span class="p">,</span> <span class="n">custom_namespaces</span><span class="o">=</span><span class="n">custom_namespaces</span><span class="p">)</span><span class="o">.</span><span class="n">describe</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">deps_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">all_deps</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">v</span><span class="p">)</span>
+
+    <span class="n">all_deps</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">all_deps</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+    <span class="k">if</span> <span class="n">remap</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">sanitize_deps</span><span class="p">(</span><span class="n">all_deps</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">all_deps</span></div>
+
+
+<span class="k">def</span> <span class="nf">sanitize_deps</span><span class="p">(</span><span class="n">deps_dict</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Helper function that takes the output of `notebook_path_to_dependencies`</span>
+<span class="sd">    or `simple_import_search` and turns normalizes the import names to be</span>
+<span class="sd">    synonymous with their conda/pip names</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    deps_dict : dict</span>
+<span class="sd">        Output of `notebook_path_to_dependencies` or `simple_import_search`</span>
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    deps_dict : dict</span>
+<span class="sd">        If remap is True: Sanitized `deps_dict`</span>
+<span class="sd">        If remap is False: `deps_dict`</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="kn">from</span> <span class="nn">.inspection</span> <span class="kn">import</span> <span class="n">PACKAGE_NAME</span>
+    <span class="n">new_deps_dict</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">list_of_possible_fakes</span> <span class="o">=</span> <span class="nb">set</span><span class="p">([</span><span class="n">v</span> <span class="k">for</span> <span class="n">val</span> <span class="ow">in</span> <span class="n">pkg_data</span><span class="p">[</span><span class="s1">&#39;_FAKE_PACKAGES&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">for</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">val</span><span class="p">])</span>
+    <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">packages_list</span> <span class="ow">in</span> <span class="n">deps_dict</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+
+        <span class="n">pkgs</span> <span class="o">=</span> <span class="n">copy</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">packages_list</span><span class="p">)</span>
+        <span class="n">new_deps_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">pkg</span> <span class="ow">in</span> <span class="n">pkgs</span><span class="p">:</span>
+            <span class="c1"># drop fake packages</span>
+            <span class="k">if</span> <span class="n">pkg</span> <span class="ow">in</span> <span class="n">list_of_possible_fakes</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Ignoring </span><span class="si">{}</span><span class="s2"> from the list of imports. It is &quot;</span>
+                             <span class="s2">&quot;installed as part of another package. Set the &quot;</span>
+                             <span class="s2">&quot;`--no-remap` cli flag if you want to disable &quot;</span>
+                             <span class="s2">&quot;this&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pkg</span><span class="p">))</span>
+                <span class="k">continue</span>
+            <span class="k">if</span> <span class="n">pkg</span> <span class="o">==</span> <span class="n">PACKAGE_NAME</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Ignoring </span><span class="si">{}</span><span class="s2"> from the list of imports. It is &quot;</span>
+                             <span class="s2">&quot;the name of the package that we are trying to &quot;</span>
+                             <span class="s2">&quot;find the dependencies for. Set the `--no-remap` &quot;</span>
+                             <span class="s2">&quot;cli flag if you want to disable this.&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pkg</span><span class="p">))</span>
+                <span class="k">continue</span>
+            <span class="n">pkg_to_add</span> <span class="o">=</span> <span class="n">pkg_data</span><span class="p">[</span><span class="s1">&#39;_PACKAGE_MAPPING&#39;</span><span class="p">]</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">pkg</span><span class="p">,</span> <span class="n">pkg</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">pkg</span> <span class="o">!=</span> <span class="n">pkg_to_add</span><span class="p">:</span>
+                <span class="n">logger</span><span class="o">.</span><span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Renaming </span><span class="si">{}</span><span class="s2"> to </span><span class="si">{}</span><span class="s2">&quot;</span><span class="o">.</span><span class="n">format</span><span class="p">(</span><span class="n">pkg</span><span class="p">,</span> <span class="n">pkg_to_add</span><span class="p">))</span>
+            <span class="n">new_deps_dict</span><span class="p">[</span><span class="n">k</span><span class="p">]</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">pkg_to_add</span><span class="p">)</span>
+    <span class="n">new_deps_dict</span> <span class="o">=</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">new_deps_dict</span><span class="o">.</span><span class="n">items</span><span class="p">()</span> <span class="k">if</span> <span class="n">v</span><span class="p">}</span>
+    <span class="k">return</span> <span class="n">new_deps_dict</span>
+
+
+<span class="k">def</span> <span class="nf">simple_import_search_conda_forge_import_map</span><span class="p">(</span><span class="n">path_to_source_code</span><span class="p">,</span> <span class="n">builtins</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ignore</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">custom_namespaces</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Return all conda-forge packages used in all .py files in `path_to_source_code`</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path_to_source_code : str</span>
+<span class="sd">    builtins : list, optional</span>
+<span class="sd">        List of python builtins to partition into their own section</span>
+<span class="sd">    ignore : list, optional</span>
+<span class="sd">        String pattern which if matched causes the file to not be inspected</span>
+<span class="sd">    custom_namespaces : list of str or None</span>
+<span class="sd">        If not None, then resulting package outputs will list everying under these</span>
+<span class="sd">        namespaces (e.g., for packages foo.bar and foo.baz, the outputs are foo.bar</span>
+<span class="sd">        and foo.baz instead of foo if custom_namespaces=[&quot;foo&quot;]).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict</span>
+<span class="sd">        The list of all imported modules, sorted according to the keys listed</span>
+<span class="sd">        in the docstring of depfinder.ImportCatcher.describe()</span>
+
+<span class="sd">    Examples</span>
+<span class="sd">    --------</span>
+<span class="sd">    &gt;&gt;&gt; depfinder.simple_import_search_conda_forge_import_map(&#39;/path/to/depfinder/source&#39;)</span>
+<span class="sd">    {&#39;builtin&#39;: [&#39;__future__&#39;,</span>
+<span class="sd">                 &#39;ast&#39;,</span>
+<span class="sd">                 &#39;collections&#39;,</span>
+<span class="sd">                 &#39;json&#39;,</span>
+<span class="sd">                 &#39;os&#39;,</span>
+<span class="sd">                 &#39;shlex&#39;,</span>
+<span class="sd">                 &#39;sys&#39;,</span>
+<span class="sd">                 &#39;tempfile&#39;],</span>
+<span class="sd">     &#39;required&#39;: [&#39;depfinder&#39;,</span>
+<span class="sd">                  &#39;nbformat&#39;,</span>
+<span class="sd">                  &#39;pytest&#39;,</span>
+<span class="sd">                  &#39;setuptools&#39;,</span>
+<span class="sd">                  &#39;sphinx_rtd_theme&#39;,</span>
+<span class="sd">                  &#39;stdlib_list&#39;,</span>
+<span class="sd">                  &#39;test_with_code&#39;]}</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># run depfinder on source code</span>
+    <span class="k">if</span> <span class="n">ignore</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ignore</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">total_imports_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">iterate_over_library</span><span class="p">(</span><span class="n">path_to_source_code</span><span class="p">,</span> <span class="n">custom_namespaces</span><span class="o">=</span><span class="n">custom_namespaces</span><span class="p">):</span>
+        <span class="n">total_imports_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">total_imports</span><span class="p">)</span>
+    <span class="n">total_imports</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">total_import</span> <span class="ow">in</span> <span class="n">total_imports_list</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">md</span> <span class="ow">in</span> <span class="n">total_import</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">total_imports</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">md</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">.reports</span> <span class="kn">import</span> <span class="n">report_conda_forge_names_from_import_map</span>
+    <span class="n">imports</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span> <span class="o">=</span> <span class="n">report_conda_forge_names_from_import_map</span><span class="p">(</span>
+        <span class="n">total_imports</span><span class="p">,</span> <span class="n">builtin_modules</span><span class="o">=</span><span class="n">builtins</span><span class="p">,</span> <span class="n">ignore</span><span class="o">=</span><span class="n">ignore</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="p">{</span><span class="n">k</span><span class="p">:</span> <span class="nb">sorted</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="n">imports</span><span class="o">.</span><span class="n">items</span><span class="p">()}</span>
+
+
+<span class="k">def</span> <span class="nf">simple_import_to_pkg_map</span><span class="p">(</span><span class="n">path_to_source_code</span><span class="p">,</span> <span class="n">builtins</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">ignore</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span> <span class="n">custom_namespaces</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>
+<span class="w">    </span><span class="sd">&quot;&quot;&quot;Provide the map beteen all the imports and their possible packages</span>
+
+<span class="sd">    Parameters</span>
+<span class="sd">    ----------</span>
+<span class="sd">    path_to_source_code : str</span>
+<span class="sd">    builtins : list, optional</span>
+<span class="sd">        List of python builtins to partition into their own section</span>
+<span class="sd">    ignore : list, optional</span>
+<span class="sd">        String pattern which if matched causes the file to not be inspected</span>
+<span class="sd">    custom_namespaces : list of str or None</span>
+<span class="sd">        If not None, then resulting package outputs will list everying under these</span>
+<span class="sd">        namespaces (e.g., for packages foo.bar and foo.baz, the outputs are foo.bar</span>
+<span class="sd">        and foo.baz instead of foo if custom_namespaces=[&quot;foo&quot;]).</span>
+
+<span class="sd">    Returns</span>
+<span class="sd">    -------</span>
+<span class="sd">    dict of dict of sets:</span>
+<span class="sd">        The classes of requirements (required, questionable, builtin, no match required, no match questionable),</span>
+<span class="sd">        name of the import and packages that provide that import</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># run depfinder on source code</span>
+    <span class="k">if</span> <span class="n">ignore</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ignore</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">total_imports_list</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">c</span> <span class="ow">in</span> <span class="n">iterate_over_library</span><span class="p">(</span><span class="n">path_to_source_code</span><span class="p">,</span> <span class="n">custom_namespaces</span><span class="o">=</span><span class="n">custom_namespaces</span><span class="p">):</span>
+        <span class="n">total_imports_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">c</span><span class="o">.</span><span class="n">total_imports</span><span class="p">)</span>
+    <span class="n">total_imports</span> <span class="o">=</span> <span class="n">defaultdict</span><span class="p">(</span><span class="nb">dict</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">total_import</span> <span class="ow">in</span> <span class="n">total_imports_list</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">name</span><span class="p">,</span> <span class="n">md</span> <span class="ow">in</span> <span class="n">total_import</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="n">total_imports</span><span class="p">[</span><span class="n">name</span><span class="p">]</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="n">md</span><span class="p">)</span>
+    <span class="kn">from</span> <span class="nn">.reports</span> <span class="kn">import</span> <span class="n">report_conda_forge_names_from_import_map</span>
+    <span class="n">_</span><span class="p">,</span> <span class="n">_</span><span class="p">,</span> <span class="n">import_to_artifact</span> <span class="o">=</span> <span class="n">report_conda_forge_names_from_import_map</span><span class="p">(</span>
+        <span class="n">total_imports</span><span class="p">,</span> <span class="n">builtin_modules</span><span class="o">=</span><span class="n">builtins</span><span class="p">,</span> <span class="n">ignore</span><span class="o">=</span><span class="n">ignore</span>
+    <span class="p">)</span>
+    <span class="k">return</span> <span class="n">import_to_artifact</span>
+</pre></div>
+
+           </div>
+          </div>
+    <a href="https://github.com/ericdill/depfinder">
+        <img style="position: absolute; top: 0; right: 0; border: 0;" src="https://github.blog/wp-content/uploads/2008/12/forkme_right_red_aa0000.png?resize=149%2C149" alt="Fork me on GitHub">
+    </a>
+
+          <footer>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2015, Eric Dill.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>
